@@ -1,0 +1,475 @@
+:root {
+    --primary-color: #3B8CFF;     /* 浅蓝色，主要用于按钮和重点元素 */
+    --primary-dark: #2A78E4;      /* 深浅蓝色 */
+    --primary-light: #E8E8E8;     /* 保持浅灰色背景 */
+    --secondary-color: #FA5151;   /* 保持微信红 */
+    --text-color: #191919;        /* 保持微信主文本色 */
+    --text-light: #888888;        /* 保持微信次要文本颜色 */
+    --bg-color: #F5F5F5;          /* 保持微信背景色 */
+    --panel-bg: #FFFFFF;          /* 保持微信卡片背景 */
+    --border-color: #E5E5E5;      /* 保持微信边框色 */
+    --success-color: #3B8CFF;     /* 成功色改为蓝色 */
+    --link-color: #576B95;        /* 保持微信链接色 */
+    --slider-track-color: #CCCCCC; /* 保持滑块轨道颜色为灰色 */
+    --button-color: #3B8CFF;      /* 按钮颜色改为蓝色 */
+    --button-hover: #2A78E4;      /* 按钮悬停颜色改为深蓝色 */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+h1 {
+    font-weight: 400;
+    color: var(--text-color);
+    font-size: 28px;
+}
+
+/* 控制区域样式 */
+.control-section {
+    background-color: var(--panel-bg);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.pid-params {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.param-group {
+    position: relative;
+}
+
+label {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap; /* 防止换行 */
+}
+
+input[type="range"] {
+    flex: 1; /* 使滑块占用可用空间 */
+    min-width: 0; /* 允许缩小到容器宽度以下 */
+    height: 2px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--slider-track-color);
+    border-radius: 2px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--button-color);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    background: var(--button-hover);
+}
+
+input[type="number"] {
+    width: 70px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+    min-width: 70px; /* 确保输入框有最小宽度 */
+    color: var(--text-color);
+}
+
+.value-display {
+    min-width: 45px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.buttons-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-start;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    background-color: var(--button-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 400;
+    transition: background-color 0.2s;
+    min-width: 100px;
+    text-align: center;
+    box-shadow: none;
+    line-height: 1.41176471;
+}
+
+.action-btn:hover {
+    background-color: var(--button-hover);
+}
+
+.action-btn:active {
+    opacity: 0.9;
+}
+
+/* 帮助按钮特殊样式 */
+.help-btn {
+    background-color: var(--text-light);
+}
+
+.help-btn:hover {
+    background-color: var(--text-color);
+}
+
+/* 模态弹窗样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.show {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content {
+    background-color: var(--panel-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+}
+
+.modal.show .modal-content {
+    transform: translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.close-btn {
+    font-size: 24px;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: var(--text-color);
+}
+
+.modal-body {
+    padding: 20px;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.modal-body h3 {
+    font-size: 16px;
+    margin: 0 0 12px 0;
+    color: var(--text-color);
+}
+
+.modal-body h3:not(:first-child) {
+    margin-top: 20px;
+}
+
+.modal-body ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.modal-body li {
+    margin-bottom: 8px;
+}
+
+.modal-body strong {
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* 图形区域样式 */
+.graph-section {
+    margin-top: 16px;
+}
+
+.graph-area {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background-color: var(--panel-bg);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    cursor: crosshair; /* 设置默认指针为十字线，表示可跟踪 */
+    transition: border-color 0.3s;
+}
+
+.graph-area.not-tracking {
+    border-color: var(--secondary-color);
+}
+
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.direct-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--secondary-color);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    left: 50px;
+    z-index: 10;
+}
+
+.pid-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    left: 50px;
+    z-index: 10;
+}
+
+.coordinate-label {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    transform: translateY(-50%);
+    z-index: 5;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.coordinate-label::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -5px;
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 5px solid;
+    transform: translateY(-50%);
+}
+
+.direct-label {
+    border: none;
+    background-color: transparent;
+    color: var(--secondary-color);
+    font-weight: bold;
+    left: 6px;
+    box-shadow: none;
+}
+
+.direct-label::after {
+    display: none; /* 移除箭头 */
+}
+
+.pid-label {
+    border: none;
+    background-color: transparent;
+    color: var(--primary-color);
+    font-weight: bold;
+    left: 6px;
+    box-shadow: none;
+}
+
+.pid-label::after {
+    display: none; /* 移除箭头 */
+}
+
+.coordinate {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* 信息图标样式 */
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: var(--bg-color);
+    color: var(--text-light);
+    font-size: 10px;
+    font-weight: bold;
+    font-family: 'Times New Roman', Times, serif;
+    font-style: italic;
+    margin-left: 6px;
+    cursor: help;
+    transition: background-color 0.2s;
+    vertical-align: middle;
+    font-style: normal;
+}
+
+.info-icon:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* 自定义tooltip样式 */
+.tooltip {
+    position: fixed;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    max-width: 300px;
+    z-index: 1000;
+    pointer-events: none;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* tooltip样式 - 使用原生title属性，确保跨浏览器兼容性 */
+[title] {
+    position: relative;
+}
+
+/* 教程GIF样式 */
+.tutorial-container {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.tutorial-gif {
+    max-width: 100%;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计 */
+@media screen and (min-width: 768px) {
+    .pid-params {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .graph-area {
+        height: 500px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .graph-area {
+        height: 300px;
+    }
+    
+    /* 为移动设备优化滑块和输入框 */
+    .slider-container {
+        gap: 5px;
+    }
+    
+    input[type="range"] {
+        height: 2px;
+    }
+    
+    input[type="number"] {
+        width: 60px;
+        min-width: 60px;
+        padding: 6px;
+        font-size: 12px;
+    }
+    
+    .value-display {
+        display: none;
+    }
+    
+    .action-btn {
+        flex: 1 1 calc(50% - 5px);
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+}
