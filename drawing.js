@@ -5,6 +5,16 @@ class DrawingManager {
         this.coordinateCanvas = coordinateCanvas;
         this.trailCtx = trailCanvas.getContext('2d');
         this.coordCtx = coordinateCanvas.getContext('2d');
+        
+        // 添加传递函数相关变量
+        this.pGain = 0.5;
+        this.iGain = 0.02;
+        this.dGain = 0.2;
+        
+        // 添加采样率计算相关属性
+        this.lastFrameTime = 0;
+        this.currentSampleRate = 0;
+        this.sampleRateFilter = 0; // 平滑过滤值
     }
     
     /**
@@ -20,6 +30,15 @@ class DrawingManager {
         this.coordinateCanvas.height = height;
         
         this.drawCoordinate();
+    }
+    
+    /**
+     * 更新PID参数值，用于显示传递函数
+     */
+    updatePIDParams(pGain, iGain, dGain) {
+        this.pGain = pGain;
+        this.iGain = iGain;
+        this.dGain = dGain;
     }
     
     /**
@@ -110,6 +129,76 @@ class DrawingManager {
                 this.coordCtx.fillText(value.toString(), beginOffset - 5, y);
             }
         }
+        
+        // 在绘制完坐标系后，添加传递函数显示
+        this.drawTransferFunction();
+    }
+    
+    /**
+     * 绘制传递函数
+     */
+    drawTransferFunction() {
+        const ctx = this.coordCtx;
+        const width = this.coordinateCanvas.width;
+        
+        // 设置字体和样式
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        
+        // 格式化参数值，保留三位小数
+        const pValue = this.pGain.toFixed(3);
+        const iValue = this.iGain.toFixed(3);
+        const dValue = this.dGain.toFixed(3);
+        
+        // 在右上角绘制传递函数文本
+        const padding = 10;
+        ctx.fillText(`G(s) = ${pValue} + ${iValue}/s + ${dValue}·s`, width - padding, padding);
+        
+        // 在传递函数下方显示采样率
+        // 采样率的计算已移到updateSampleRate方法，这里只负责显示
+        if (this.currentSampleRate) {
+            ctx.fillText(`采样率: ${this.currentSampleRate} Hz`, width - padding, padding + 20);
+        }
+    }
+    
+    /**
+     * 更新采样率计算
+     * @param {number} currentTime - 当前时间戳
+     */
+    updateSampleRate(currentTime) {
+        // 计算并显示采样率
+        const now = currentTime;
+        if (this.lastFrameTime) {
+            const instantRate = 1000 / (now - this.lastFrameTime); // 瞬时采样率(Hz)
+            
+            // 使用低通滤波器平滑采样率显示
+            this.sampleRateFilter = this.sampleRateFilter * 0.95 + instantRate * 0.05;
+            this.currentSampleRate = Math.round(this.sampleRateFilter);
+            
+            // 每次更新采样率后，需要重绘传递函数区域
+            // 使用优化方式，只重绘右上角部分而不是整个坐标系
+            this.updateInfoDisplay();
+        }
+        this.lastFrameTime = now;
+    }
+    
+    /**
+     * 更新信息显示区域（传递函数和采样率）
+     * 只重绘右上角部分，避免整个坐标系重绘
+     */
+    updateInfoDisplay() {
+        const ctx = this.coordCtx;
+        const width = this.coordinateCanvas.width;
+        const infoWidth = 200; // 信息区域宽度
+        const infoHeight = 50; // 信息区域高度
+        
+        // 清除右上角区域
+        ctx.clearRect(width - infoWidth, 0, infoWidth, infoHeight);
+        
+        // 重新绘制传递函数和采样率
+        this.drawTransferFunction();
     }
     
     /**

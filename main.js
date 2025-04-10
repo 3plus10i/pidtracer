@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const directLabel = document.getElementById('directLabel');
     const pidLabel = document.getElementById('pidLabel');
     
+    // 删除传递函数显示元素引用
+    
     // 更新坐标标签
     function updateCoordinateLabels() {
         const height = graphArea.offsetHeight;
@@ -61,6 +63,8 @@ document.addEventListener('DOMContentLoaded', function() {
         dGainInput.max = Constants.PID.D_RANGE.max;
         dGainInput.step = Constants.PID.D_RANGE.step;
     }
+    
+    // 删除updateTransferFunction函数，交由drawing.js中的逻辑处理
     
     // 按钮元素
     const resetBtn = document.getElementById('resetBtn');
@@ -132,18 +136,30 @@ document.addEventListener('DOMContentLoaded', function() {
         pGain = parseFloat(this.value);
         syncInputs('slider', pGainInput, pGain);
         pidController.updateParameters(pGain, iGain, dGain);
+        
+        // 更新传递函数显示
+        drawingManager.updatePIDParams(pGain, iGain, dGain);
+        drawingManager.resizeCanvases(); // 重绘画布以更新传递函数
     });
     
     iGainSlider.addEventListener('input', function() {
         iGain = parseFloat(this.value);
         syncInputs('slider', iGainInput, iGain);
         pidController.updateParameters(pGain, iGain, dGain);
+        
+        // 更新传递函数显示
+        drawingManager.updatePIDParams(pGain, iGain, dGain);
+        drawingManager.resizeCanvases();
     });
     
     dGainSlider.addEventListener('input', function() {
         dGain = parseFloat(this.value);
         syncInputs('slider', dGainInput, dGain);
         pidController.updateParameters(pGain, iGain, dGain);
+        
+        // 更新传递函数显示
+        drawingManager.updatePIDParams(pGain, iGain, dGain);
+        drawingManager.resizeCanvases();
     });
     
     // 输入框事件监听
@@ -151,18 +167,30 @@ document.addEventListener('DOMContentLoaded', function() {
         pGain = parseFloat(this.value);
         syncInputs('input', pGainSlider, pGain);
         pidController.updateParameters(pGain, iGain, dGain);
+        
+        // 更新传递函数显示
+        drawingManager.updatePIDParams(pGain, iGain, dGain);
+        drawingManager.resizeCanvases();
     });
     
     iGainInput.addEventListener('change', function() {
         iGain = parseFloat(this.value);
         syncInputs('input', iGainSlider, iGain);
         pidController.updateParameters(pGain, iGain, dGain);
+        
+        // 更新传递函数显示
+        drawingManager.updatePIDParams(pGain, iGain, dGain);
+        drawingManager.resizeCanvases();
     });
     
     dGainInput.addEventListener('change', function() {
         dGain = parseFloat(this.value);
         syncInputs('input', dGainSlider, dGain);
         pidController.updateParameters(pGain, iGain, dGain);
+        
+        // 更新传递函数显示
+        drawingManager.updatePIDParams(pGain, iGain, dGain);
+        drawingManager.resizeCanvases();
     });
     
     // 重置按钮
@@ -182,6 +210,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // 重置PID控制器
         pidController.reset();
         pidController.updateParameters(pGain, iGain, dGain);
+        
+        // 更新传递函数显示
+        drawingManager.updatePIDParams(pGain, iGain, dGain);
+        drawingManager.resizeCanvases();
     });
     
     // 清除轨迹按钮
@@ -374,6 +406,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isPaused) {
             simulateStep(currentTime);
             drawingManager.drawTrail(directYQueue.getAll(), pidYQueue.getAll());
+            
+            // 每帧更新采样率
+            drawingManager.updateSampleRate(currentTime);
         }
         requestAnimationFrame(animate);
     }
@@ -402,6 +437,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 初始化坐标标签
         updateCoordinateLabels();
+        
+        // 删除单独的初始化传递函数调用
+        // 保留传递函数参数更新
+        drawingManager.updatePIDParams(pGain, iGain, dGain);
         
         // 设置初始鼠标指针样式
         graphArea.style.cursor = 'crosshair';
