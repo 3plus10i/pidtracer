@@ -157,9 +157,8 @@ class DrawingManager {
         ctx.fillText(`G(s) = ${pValue} + ${iValue}/s + ${dValue}·s`, width - padding, padding);
         
         // 在传递函数下方显示采样率
-        // 采样率的计算已移到updateSampleRate方法，这里只负责显示
-        if (this.currentSampleRate) {
-            ctx.fillText(`采样率: ${this.currentSampleRate} Hz`, width - padding, padding + 20);
+        if (this.currentDisplayText) {
+            ctx.fillText(this.currentDisplayText, width - padding, padding + 20);
         }
     }
     
@@ -175,10 +174,17 @@ class DrawingManager {
             
             // 使用低通滤波器平滑采样率显示
             this.sampleRateFilter = this.sampleRateFilter * 0.95 + instantRate * 0.05;
-            this.currentSampleRate = Math.round(this.sampleRateFilter);
+            
+            // 显示真实采样率或设定的固定采样率
+            if (Constants.CONTROL.FIXED_SAMPLE_TIME) {
+                this.currentSampleRate = Constants.CONTROL.SAMPLE_RATE;
+                this.currentDisplayText = `f = ${this.currentSampleRate} Hz`;
+            } else {
+                this.currentSampleRate = Math.round(this.sampleRateFilter);
+                this.currentDisplayText = `f = ${this.currentSampleRate} Hz`;
+            }
             
             // 每次更新采样率后，需要重绘传递函数区域
-            // 使用优化方式，只重绘右上角部分而不是整个坐标系
             this.updateInfoDisplay();
         }
         this.lastFrameTime = now;

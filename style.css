@@ -109,7 +109,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 input[type="number"] {
     width: 70px;
-    padding: 8px 12px;
+    padding: 2px 4px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 14px;
@@ -473,30 +473,6 @@ canvas {
         padding: 8px 12px;
     }
 }
-
-/* 传递函数样式 */
-/* .transfer-function {
-    display: flex;
-    align-items: center;
-    padding: 10px 15px;
-    margin: 15px 0;
-    background-color: var(--primary-light);
-    border-radius: 6px;
-    gap: 10px;
-}
-
-.transfer-function span {
-    font-size: 14px;
-    color: var(--text-color);
-    white-space: nowrap;
-}
-
-.formula {
-    flex-grow: 1;
-    text-align: center;
-    overflow-x: auto;
-    padding: 5px 0;
-} */
 
 /* 在小屏幕上适当调整样式 */
 @media screen and (max-width: 600px) {

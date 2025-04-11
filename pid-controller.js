@@ -7,6 +7,7 @@ class PIDController {
         this.lastError = 0;
         this.integral = 0;
         this.lastTime = 0;
+        this.fixedDeltaTime = 1.0 / Constants.CONTROL.SAMPLE_RATE; // 固定采样时间(秒)
     }
     
     /**
@@ -26,22 +27,31 @@ class PIDController {
      * @returns {Object} - 包含输出值和计算状态的对象
      */
     compute(setpoint, processVariable, currentTime) {
-        // 计算时间差（秒）
-        const deltaTime = (currentTime - this.lastTime) / 1000;
-        
-        // 时间差异常时跳过计算
-        if (deltaTime <= 0 || deltaTime > 0.1) {
-            this.lastTime = currentTime;
-            return {
-                output: 0,
-                error: 0,
-                deltaTime: deltaTime,
-                skip: true
-            };
+        // 根据配置选择固定采样时间或实际时间差
+        let deltaTime;
+        if (Constants.CONTROL.FIXED_SAMPLE_TIME) {
+            deltaTime = this.fixedDeltaTime;
+        } else {
+            // 计算实际时间差（秒）
+            deltaTime = (currentTime - this.lastTime) / 1000;
+            
+            // 时间差异常时跳过计算
+            if (deltaTime <= 0 || deltaTime > 0.1) {
+                this.lastTime = currentTime;
+                return {
+                    output: 0,
+                    error: 0,
+                    deltaTime: deltaTime,
+                    skip: true
+                };
+            }
         }
         
         // 计算误差
         const error = setpoint - processVariable;
+        
+        // 计算各个控制分量
+        const pTerm = this.pGain * error;
         
         // 计算积分项
         this.integral += error * deltaTime;
@@ -49,14 +59,14 @@ class PIDController {
         // 限制积分项大小，防止积分饱和
         this.integral = Math.max(-Constants.PID.MAX_INTEGRAL, 
                            Math.min(Constants.PID.MAX_INTEGRAL, this.integral));
+        const iTerm = this.iGain * this.integral;
         
         // 计算微分项
         const derivative = (error - this.lastError) / deltaTime;
+        const dTerm = this.dGain * derivative;
         
         // 计算PID输出
-        const output = this.pGain * error + 
-                       this.iGain * this.integral + 
-                       this.dGain * derivative;
+        const output = pTerm + iTerm + dTerm;
         
         // 保存当前误差用于下一次微分计算
         this.lastError = error;
@@ -65,6 +75,9 @@ class PIDController {
         return {
             output: output,
             error: error,
+            pTerm: pTerm,
+            iTerm: iTerm,
+            dTerm: dTerm,
             deltaTime: deltaTime,
             skip: false
         };

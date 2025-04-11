@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let cursorY = graphArea.offsetHeight / 2;
     let directY = graphArea.offsetHeight / 2;
     let pidY = graphArea.offsetHeight / 2;
+    let pidVelocity = 0; // 添加速度变量
     
     // 获取常量
     const beginOffset = Constants.GRAPH.BEGIN_OFFSET;
@@ -106,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let isPaused = false;
     
     // 鼠标跟踪状态
-    let isTracking = true;
+    let isTracking = false;
     
     // 更新队列数据
     function updateQueues(directY, pidY, currentTime) {
@@ -195,6 +196,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 重置按钮
     resetBtn.addEventListener('click', function() {
+        resetParameters();
+    });
+    
+    // 清除轨迹按钮
+    clearBtn.addEventListener('click', function() {
+        clearTrails();
+    });
+    
+    // 抽取重置参数功能为函数以便重用
+    function resetParameters() {
         pGain = Constants.PID.DEFAULT_P_GAIN;
         iGain = Constants.PID.DEFAULT_I_GAIN;
         dGain = Constants.PID.DEFAULT_D_GAIN;
@@ -211,29 +222,43 @@ document.addEventListener('DOMContentLoaded', function() {
         pidController.reset();
         pidController.updateParameters(pGain, iGain, dGain);
         
+        // 重置速度
+        pidVelocity = 0;
+        
         // 更新传递函数显示
         drawingManager.updatePIDParams(pGain, iGain, dGain);
         drawingManager.resizeCanvases();
-    });
+    }
     
-    // 清除轨迹按钮
-    clearBtn.addEventListener('click', function() {
+    // 抽取清除轨迹功能为函数以便重用
+    function clearTrails() {
         const defaultValue = graphArea.offsetHeight / 2;
         directYQueue.clear(defaultValue);
         pidYQueue.clear(defaultValue);
         timeQueue.clear(0);
         
+        // 重置速度
+        pidVelocity = 0;
+        
         // 清除画布
         drawingManager.drawTrail(directYQueue.getAll(), pidYQueue.getAll());
-    });
+    }
     
     // 触摸事件处理
-    graphArea.addEventListener('touchstart', handleTouch);
+    graphArea.addEventListener('touchstart', function(e) {
+        isTracking = true;
+        graphArea.style.cursor = 'crosshair';
+        handleTouch(e);
+    });
+    
     graphArea.addEventListener('touchmove', handleTouch);
     
+    graphArea.addEventListener('touchend', function() {
+        isTracking = false;
+        graphArea.style.cursor = 'default';
+    });
+    
     function handleTouch(e) {
-        if (!isTracking) return; // 如果未跟踪，则跳过更新
-        
         e.preventDefault(); // 防止滚动
         
         if (e.touches.length > 0) {
@@ -252,19 +277,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // 添加触摸点击事件 - 切换跟踪状态
-    graphArea.addEventListener('touchend', function(e) {
-        // 检测是否是轻触（tap）而不是滑动
-        if (e.changedTouches.length === 1) {
-            // 切换跟踪状态
-            isTracking = !isTracking;
-            
-            // 更新鼠标指针样式以给出视觉反馈
-            graphArea.style.cursor = isTracking ? 'crosshair' : 'default';
-        }
+    // 鼠标事件处理
+    graphArea.addEventListener('mousedown', function(e) {
+        isTracking = true;
+        graphArea.style.cursor = 'crosshair';
+        
+        // 立即更新跟踪点位置，不等待mousemove
+        const rect = graphArea.getBoundingClientRect();
+        cursorY = e.clientY - rect.top;
+        
+        // 确保光标在区域内
+        cursorY = Math.max(0, Math.min(graphArea.offsetHeight, cursorY));
+        
+        // 更新直接跟随点位置
+        directY = cursorY;
+        directDot.style.top = directY + 'px';
+        
+        // 更新坐标标签
+        updateCoordinateLabels();
     });
     
-    // 鼠标移动事件
+    graphArea.addEventListener('mouseup', function() {
+        isTracking = false;
+        graphArea.style.cursor = 'default';
+    });
+    
     graphArea.addEventListener('mousemove', function(e) {
         if (!isTracking) return; // 如果未跟踪，则跳过更新
         
@@ -282,34 +319,10 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCoordinateLabels();
     });
     
-    // 当鼠标离开区域时停止更新
+    // 当鼠标离开区域时停止跟踪
     graphArea.addEventListener('mouseleave', function() {
-        // 不更新光标位置，保持最后位置
-    });
-    
-    // 添加鼠标点击事件 - 切换跟踪状态
-    graphArea.addEventListener('click', function(e) {
-        // 切换跟踪状态
-        isTracking = !isTracking;
-        
-        // 更新鼠标指针样式以给出视觉反馈
-        graphArea.style.cursor = isTracking ? 'crosshair' : 'default';
-        
-        // 如果重新开始跟踪，立即更新目标位置
-        if (isTracking) {
-            const rect = graphArea.getBoundingClientRect();
-            cursorY = e.clientY - rect.top;
-            
-            // 确保光标在区域内
-            cursorY = Math.max(0, Math.min(graphArea.offsetHeight, cursorY));
-            
-            // 更新直接跟随点位置
-            directY = cursorY;
-            directDot.style.top = directY + 'px';
-            
-            // 更新坐标标签
-            updateCoordinateLabels();
-        }
+        isTracking = false;
+        graphArea.style.cursor = 'default';
     });
     
     // 模拟函数 - PID控制
@@ -319,8 +332,26 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (result.skip) return;
         
-        // 更新PID控制点位置
-        pidY += result.output * result.deltaTime * Constants.CONTROL.ANIMATION_SPEED;
+        if (Constants.CONTROL.ACCELERATION_CONTROL) {
+            // 加速度控制模式：PID输出作为加速度
+            const acceleration = result.output * Constants.CONTROL.ANIMATION_SPEED;
+            
+            // 更新速度
+            pidVelocity += acceleration * result.deltaTime;
+            
+            // 应用阻尼/摩擦力 (模拟空气阻力)
+            pidVelocity *= (1 - Constants.CONTROL.DAMPING_FACTOR);
+            
+            // 限制最大速度
+            pidVelocity = Math.max(-Constants.CONTROL.MAX_VELOCITY, 
+                         Math.min(Constants.CONTROL.MAX_VELOCITY, pidVelocity));
+            
+            // 根据速度更新位置
+            pidY += pidVelocity * result.deltaTime;
+        } else {
+            // 原始速度控制模式
+            pidY += result.output * result.deltaTime * Constants.CONTROL.ANIMATION_SPEED;
+        }
         
         // 确保点不会超出边界
         pidY = Math.max(0, Math.min(graphArea.offsetHeight, pidY));
@@ -354,6 +385,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
         } else if (e.key.toLowerCase() === 's') {
             takeScreenshot();
+            e.preventDefault();
+        } else if (e.key.toLowerCase() === 'r') {
+            // 重置参数快捷键
+            resetParameters();
+            e.preventDefault();
+        } else if (e.key.toLowerCase() === 'c') {
+            // 清除轨迹快捷键
+            clearTrails();
             e.preventDefault();
         }
     });
@@ -401,13 +440,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // 添加采样率控制相关变量
+    let lastSampleTime = 0;
+    const sampleInterval = 1000 / Constants.CONTROL.SAMPLE_RATE; // 毫秒
+    
     // 动画循环
     function animate(currentTime) {
         if (!isPaused) {
-            simulateStep(currentTime);
+            // 检查是否需要进行采样和控制计算
+            const timeElapsed = currentTime - lastSampleTime;
+            
+            if (Constants.CONTROL.FIXED_SAMPLE_TIME) {
+                // 按固定采样率计算
+                if (timeElapsed >= sampleInterval) {
+                    lastSampleTime = currentTime - (timeElapsed % sampleInterval); // 保持精确的采样间隔
+                    simulateStep(currentTime);
+                }
+            } else {
+                // 按帧率计算
+                simulateStep(currentTime);
+            }
+            
+            // 绘制始终按帧率进行
             drawingManager.drawTrail(directYQueue.getAll(), pidYQueue.getAll());
             
-            // 每帧更新采样率
+            // 每帧更新采样率显示
             drawingManager.updateSampleRate(currentTime);
         }
         requestAnimationFrame(animate);
@@ -444,6 +501,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 设置初始鼠标指针样式
         graphArea.style.cursor = 'crosshair';
+        
+        // 更新按钮文本，显示快捷键信息
+        resetBtn.textContent = Constants.BUTTONS.RESET_CONTENT;
+        clearBtn.textContent = Constants.BUTTONS.CLEAR_CONTENT;
+        pauseBtn.textContent = Constants.BUTTONS.PAUSE_CONTENT_0;
+        
+        // 重置速度
+        pidVelocity = 0;
         
         // 启动动画
         pidController.lastTime = performance.now();
