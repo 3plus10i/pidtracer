@@ -2,7 +2,7 @@
 const Constants = {
     // 图形区域配置
     GRAPH: {
-        BEGIN_OFFSET: 50,      // 起始位置偏移量（左侧）
+        BEGIN_OFFSET: 50,      // 起始竖线位置偏移量
         X_TICK_STEP: 50,       // x轴刻度间隔
         Y_TICK_STEP: 40,       // y轴刻度间隔
         MAX_TRAIL_LENGTH: 1000 // 轨迹最大长度
@@ -29,6 +29,8 @@ const Constants = {
         PAUSE_CONTENT_1: '继续(P)',
         RESET_CONTENT: '重置参数(R)',
         CLEAR_CONTENT: '清除轨迹(C)',
+        MIRROR_CONTENT_0: '镜像(M)',
+        MIRROR_CONTENT_1: '镜像(M)',
     },
     
     // 控制与交互配置
@@ -39,6 +41,7 @@ const Constants = {
         ACCELERATION_CONTROL: true, // 使用加速度控制模式
         MAX_VELOCITY: 800, // 最大速度限制
         DAMPING_FACTOR: 0.0, // 阻尼系数/摩擦力(空气阻力)
+        MIRROR_MODE: false, // 镜像模式标志
     },
     
     // 颜色配置

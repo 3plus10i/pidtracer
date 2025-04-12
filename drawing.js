@@ -50,15 +50,19 @@ class DrawingManager {
         const beginOffset = Constants.GRAPH.BEGIN_OFFSET;
         const xTickStep = Constants.GRAPH.X_TICK_STEP;
         const yTickStep = Constants.GRAPH.Y_TICK_STEP;
+        const mirrorMode = Constants.CONTROL.MIRROR_MODE;
         
         this.coordCtx.clearRect(0, 0, width, height);
+
+        // 确定起始线位置
+        const startLineX = mirrorMode ? (width - beginOffset) : beginOffset;
 
         // 绘制起始竖线
         this.coordCtx.strokeStyle = Constants.COLORS.GRID_LINE;
         this.coordCtx.lineWidth = 1;
         this.coordCtx.beginPath();
-        this.coordCtx.moveTo(beginOffset, 0);
-        this.coordCtx.lineTo(beginOffset, height);
+        this.coordCtx.moveTo(startLineX, 0);
+        this.coordCtx.lineTo(startLineX, height);
         this.coordCtx.stroke();
         
         // 绘制网格
@@ -73,12 +77,24 @@ class DrawingManager {
             this.coordCtx.stroke();
         }
         
-        // 垂直线
-        for (let x = 0; x < width; x += xTickStep) {
-            this.coordCtx.beginPath();
-            this.coordCtx.moveTo(x, 0);
-            this.coordCtx.lineTo(x, height);
-            this.coordCtx.stroke();
+        // 垂直线 - 根据镜像模式调整
+        if (mirrorMode) {
+            // 镜像模式：从右向左均匀绘制
+            for (let i = 0; i * xTickStep <= width; i++) {
+                const x = width - i * xTickStep;
+                this.coordCtx.beginPath();
+                this.coordCtx.moveTo(x, 0);
+                this.coordCtx.lineTo(x, height);
+                this.coordCtx.stroke();
+            }
+        } else {
+            // 标准模式：从左向右均匀绘制
+            for (let x = 0; x < width; x += xTickStep) {
+                this.coordCtx.beginPath();
+                this.coordCtx.moveTo(x, 0);
+                this.coordCtx.lineTo(x, height);
+                this.coordCtx.stroke();
+            }
         }
         
         // 中心线
@@ -94,30 +110,44 @@ class DrawingManager {
         this.coordCtx.textAlign = 'center';
         this.coordCtx.textBaseline = 'top';
         
-        // X轴刻度，从0开始，每5格显示一个数字
-        for (let i = 0; i < Math.floor(width / xTickStep); i += 5) {
-            const x = beginOffset + i * xTickStep;
-            if (x > beginOffset) {  // 只显示圆点右侧的刻度
-                this.coordCtx.fillText(i.toString(), x, height / 2 + 5);
+        // X轴刻度，每5格显示一个数字
+        const xTickCount = Math.floor(width / xTickStep);
+        
+        if (mirrorMode) {
+            // 镜像模式：从右向左递增
+            for (let i = 0; i < xTickCount; i += 5) {
+                const x = width - (beginOffset + i * xTickStep);
+                if (x < (width - beginOffset)) {  // 只显示起始线左侧的刻度
+                    this.coordCtx.fillText(i.toString(), x, height / 2 + 5);
+                }
+            }
+        } else {
+            // 标准模式：从左向右递增
+            for (let i = 0; i < xTickCount; i += 5) {
+                const x = beginOffset + i * xTickStep;
+                if (x > beginOffset) {  // 只显示起始线右侧的刻度
+                    this.coordCtx.fillText(i.toString(), x, height / 2 + 5);
+                }
             }
         }
         
         // 添加Y轴刻度标记（位置）
-        this.coordCtx.textAlign = 'right';
+        this.coordCtx.textAlign = mirrorMode ? 'left' : 'right';
         this.coordCtx.textBaseline = 'middle';
         
-        // Y轴中心点为0，向上为正，向下为负
         const midY = height / 2;
+        const textPadding = 5;
         
         // 绘制y=0刻度
-        this.coordCtx.fillText('0', beginOffset - 5, midY);
+        const zeroLabelX = mirrorMode ? (startLineX + textPadding) : (startLineX - textPadding);
+        this.coordCtx.fillText('0', zeroLabelX, midY);
         
         // 向上正值刻度
         for (let i = 1; i <= Math.floor(midY / yTickStep); i++) {
             const y = midY - i * yTickStep;
             if (i % 2 === 0) {  // 每隔2格显示一个数字
                 const value = i * yTickStep;
-                this.coordCtx.fillText(value.toString(), beginOffset - 5, y);
+                this.coordCtx.fillText(value.toString(), zeroLabelX, y);
             }
         }
         
@@ -126,7 +156,7 @@ class DrawingManager {
             const y = midY + i * yTickStep;
             if (i % 2 === 0) {  // 每隔2格显示一个数字
                 const value = -i * yTickStep;
-                this.coordCtx.fillText(value.toString(), beginOffset - 5, y);
+                this.coordCtx.fillText(value.toString(), zeroLabelX, y);
             }
         }
         
@@ -140,10 +170,11 @@ class DrawingManager {
     drawTransferFunction() {
         const ctx = this.coordCtx;
         const width = this.coordinateCanvas.width;
+        const mirrorMode = Constants.CONTROL.MIRROR_MODE;
         
         // 设置字体和样式
         ctx.font = '12px Arial';
-        ctx.textAlign = 'right';
+        ctx.textAlign = mirrorMode ? 'left' : 'right';
         ctx.textBaseline = 'top';
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         
@@ -152,13 +183,14 @@ class DrawingManager {
         const iValue = this.iGain.toFixed(3);
         const dValue = this.dGain.toFixed(3);
         
-        // 在右上角绘制传递函数文本
+        // 绘制传递函数文本
         const padding = 10;
-        ctx.fillText(`G(s) = ${pValue} + ${iValue}/s + ${dValue}·s`, width - padding, padding);
+        const xPos = mirrorMode ? padding : width - padding;
+        ctx.fillText(`G(s) = ${pValue} + ${iValue}/s + ${dValue}·s`, xPos, padding);
         
         // 在传递函数下方显示采样率
         if (this.currentDisplayText) {
-            ctx.fillText(this.currentDisplayText, width - padding, padding + 20);
+            ctx.fillText(this.currentDisplayText, xPos, padding + 20);
         }
     }
     
@@ -192,16 +224,22 @@ class DrawingManager {
     
     /**
      * 更新信息显示区域（传递函数和采样率）
-     * 只重绘右上角部分，避免整个坐标系重绘
      */
     updateInfoDisplay() {
         const ctx = this.coordCtx;
         const width = this.coordinateCanvas.width;
         const infoWidth = 200; // 信息区域宽度
         const infoHeight = 50; // 信息区域高度
+        const mirrorMode = Constants.CONTROL.MIRROR_MODE;
         
-        // 清除右上角区域
-        ctx.clearRect(width - infoWidth, 0, infoWidth, infoHeight);
+        // 根据镜像模式决定清除区域位置
+        if (mirrorMode) {
+            // 镜像模式 - 清除左上角
+            ctx.clearRect(0, 0, infoWidth, infoHeight);
+        } else {
+            // 标准模式 - 清除右上角
+            ctx.clearRect(width - infoWidth, 0, infoWidth, infoHeight);
+        }
         
         // 重新绘制传递函数和采样率
         this.drawTransferFunction();
@@ -216,6 +254,7 @@ class DrawingManager {
         const width = this.trailCanvas.width;
         const height = this.trailCanvas.height;
         const beginOffset = Constants.GRAPH.BEGIN_OFFSET;
+        const mirrorMode = Constants.CONTROL.MIRROR_MODE;
         
         this.trailCtx.clearRect(0, 0, width, height);
         this.trailCtx.lineWidth = 2;
@@ -226,7 +265,15 @@ class DrawingManager {
         
         let firstPoint = true;
         for (let i = 0; i < directYItems.length; i++) {
-            const x = beginOffset + i;
+            let x;
+            if (mirrorMode) {
+                // 镜像模式：从右向左绘制
+                x = width - beginOffset - i;
+            } else {
+                // 标准模式：从左向右绘制
+                x = beginOffset + i;
+            }
+            
             const y = directYItems[i];
             
             if (firstPoint) {
@@ -244,7 +291,15 @@ class DrawingManager {
         
         firstPoint = true;
         for (let i = 0; i < pidYItems.length; i++) {
-            const x = beginOffset + i;
+            let x;
+            if (mirrorMode) {
+                // 镜像模式：从右向左绘制
+                x = width - beginOffset - i;
+            } else {
+                // 标准模式：从左向右绘制
+                x = beginOffset + i;
+            }
+            
             const y = pidYItems[i];
             
             if (firstPoint) {

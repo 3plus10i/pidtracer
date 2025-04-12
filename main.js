@@ -14,7 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 更新坐标标签
     function updateCoordinateLabels() {
         const height = graphArea.offsetHeight;
+        const width = graphArea.offsetWidth;
         const centerY = height / 2;
+        const beginOffset = Constants.GRAPH.BEGIN_OFFSET;
+        const mirrorMode = Constants.CONTROL.MIRROR_MODE;
         
         // 计算相对于中心的坐标值
         const directYValue = Math.round((centerY - directY) * 2) / 2; // 精确到0.5
@@ -24,9 +27,24 @@ document.addEventListener('DOMContentLoaded', function() {
         directLabel.textContent = directYValue.toFixed(1);
         pidLabel.textContent = pidYValue.toFixed(1);
         
-        // 更新标签位置
+        // 更新标签位置 - Y坐标
         directLabel.style.top = directY + 'px';
         pidLabel.style.top = pidY + 'px';
+        
+        // 更新标签位置 - X坐标（根据镜像模式）
+        if (mirrorMode) {
+            // 镜像模式 - 标签显示在右侧
+            directLabel.style.left = (width - beginOffset + 10) + 'px';
+            pidLabel.style.left = (width - beginOffset + 10) + 'px';
+            directLabel.style.right = 'auto';
+            pidLabel.style.right = 'auto';
+        } else {
+            // 标准模式 - 标签显示在左侧
+            directLabel.style.left = (beginOffset - 10) + 'px';
+            pidLabel.style.left = (beginOffset - 10) + 'px';
+            directLabel.style.right = 'auto';
+            pidLabel.style.right = 'auto';
+        }
     }
     
     // 参数控制元素
@@ -72,6 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const pauseBtn = document.getElementById('pauseBtn');
     const screenshotBtn = document.getElementById('screenshotBtn');
     const helpBtn = document.getElementById('helpBtn');
+    
+    // 获取镜像按钮元素
+    const mirrorBtn = document.getElementById('mirrorBtn');
     
     // 弹窗元素
     const helpModal = document.getElementById('helpModal');
@@ -366,18 +387,72 @@ document.addEventListener('DOMContentLoaded', function() {
     // 暂停/继续按钮
     pauseBtn.addEventListener('click', function() {
         isPaused = !isPaused;
-        pauseBtn.textContent = isPaused ? Constants.BUTTONS.PAUSE_CONTENT_1 : Constants.BUTTONS.PAUSE_CONTENT_0;
+        if (isPaused) {
+            pauseBtn.textContent = Constants.BUTTONS.PAUSE_CONTENT_1;
+            pauseBtn.classList.add('resume-btn');
+        } else {
+            pauseBtn.textContent = Constants.BUTTONS.PAUSE_CONTENT_0;
+            pauseBtn.classList.remove('resume-btn');
+        }
+        
         if (!isPaused) {
             pidController.lastTime = performance.now();
             requestAnimationFrame(animate);
         }
     });
     
+    // 镜像模式切换按钮
+    mirrorBtn.addEventListener('click', function() {
+        toggleMirrorMode();
+    });
+    
+    // 添加一个专门更新圆点位置的函数
+    function updateDotsPosition() {
+        const width = graphArea.offsetWidth;
+        const beginOffset = Constants.GRAPH.BEGIN_OFFSET;
+        
+        if (Constants.CONTROL.MIRROR_MODE) {
+            // 镜像模式：点放在右侧
+            directDot.style.left = (width - beginOffset) + 'px';
+            pidDot.style.left = (width - beginOffset) + 'px';
+        } else {
+            // 标准模式：点放在左侧
+            directDot.style.left = beginOffset + 'px';
+            pidDot.style.left = beginOffset + 'px';
+        }
+    }
+    
+    // 镜像模式切换函数
+    function toggleMirrorMode() {
+        // 翻转镜像模式标志
+        Constants.CONTROL.MIRROR_MODE = !Constants.CONTROL.MIRROR_MODE;
+        
+        // 更新按钮文本
+        mirrorBtn.textContent = Constants.BUTTONS.MIRROR_CONTENT_0;
+        
+        // 更新点的位置
+        updateDotsPosition();
+        
+        // 更新坐标标签位置
+        updateCoordinateLabels();
+        
+        // 不清除轨迹，只重新绘制
+        drawingManager.resizeCanvases();
+        drawingManager.drawTrail(directYQueue.getAll(), pidYQueue.getAll());
+    }
+    
     // 键盘快捷键
     document.addEventListener('keydown', function(e) {
         if (e.key.toLowerCase() === 'p') {
             isPaused = !isPaused;
-            pauseBtn.textContent = isPaused ? Constants.BUTTONS.PAUSE_CONTENT_1 : Constants.BUTTONS.PAUSE_CONTENT_0;
+            if (isPaused) {
+                pauseBtn.textContent = Constants.BUTTONS.PAUSE_CONTENT_1;
+                pauseBtn.classList.add('resume-btn');
+            } else {
+                pauseBtn.textContent = Constants.BUTTONS.PAUSE_CONTENT_0;
+                pauseBtn.classList.remove('resume-btn');
+            }
+            
             if (!isPaused) {
                 pidController.lastTime = performance.now();
                 requestAnimationFrame(animate);
@@ -394,6 +469,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // 清除轨迹快捷键
             clearTrails();
             e.preventDefault();
+        } else if (e.key.toLowerCase() === 'm') {
+            // 镜像模式快捷键
+            toggleMirrorMode();
+            e.preventDefault();
         }
     });
     
@@ -402,6 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 暂停动画
         isPaused = true;
         pauseBtn.textContent = Constants.BUTTONS.PAUSE_CONTENT_1;
+        pauseBtn.classList.add('resume-btn');
         
         // 获取图片URL
         const imageUrl = drawingManager.takeScreenshot();
@@ -486,9 +566,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // 设置画布尺寸
         drawingManager.resizeCanvases();
         
-        // 设置初始点位置
-        directDot.style.left = beginOffset + 'px';
-        pidDot.style.left = beginOffset + 'px';
+        // 设置初始点位置 - 移除此处的直接设置
+        // directDot.style.left = beginOffset + 'px';
+        // pidDot.style.left = beginOffset + 'px';
+        updateDotsPosition(); // 使用新函数设置位置
+        
         directDot.style.top = directY + 'px';
         pidDot.style.top = pidY + 'px';
         
@@ -506,6 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resetBtn.textContent = Constants.BUTTONS.RESET_CONTENT;
         clearBtn.textContent = Constants.BUTTONS.CLEAR_CONTENT;
         pauseBtn.textContent = Constants.BUTTONS.PAUSE_CONTENT_0;
+        mirrorBtn.textContent = Constants.BUTTONS.MIRROR_CONTENT_0;
         
         // 重置速度
         pidVelocity = 0;
@@ -518,6 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 监听窗口大小变化
     window.addEventListener('resize', function() {
         drawingManager.resizeCanvases();
+        updateDotsPosition(); // 在窗口大小变化时更新圆点位置
     });
     
     // 初始化应用
