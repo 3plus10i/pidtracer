@@ -566,6 +566,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // 设置画布尺寸
         drawingManager.resizeCanvases();
         
+        // 添加一个小延迟，确保在页面完全渲染后再次调整尺寸
+        setTimeout(function() {
+            drawingManager.resizeCanvases();
+        }, 100);
+        
         // 设置初始点位置 - 移除此处的直接设置
         // directDot.style.left = beginOffset + 'px';
         // pidDot.style.left = beginOffset + 'px';

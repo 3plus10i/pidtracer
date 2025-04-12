@@ -39,10 +39,11 @@ body {
 }
 
 .app-container {
-    max-width: 1200px;
+    max-width: 1200px; /* 改回原来的宽度 */
     margin: 0 auto;
     padding: 20px;
     flex: 1;
+    width: 100%; /* 确保宽度充分利用可用空间 */
 }
 
 header {
@@ -285,6 +286,7 @@ input[type="number"] {
     margin-top: 16px;
 }
 
+/* 确保canvas容器和内容尺寸保持一致 */
 .graph-area {
     position: relative;
     width: 100%;
@@ -295,16 +297,19 @@ input[type="number"] {
     overflow: hidden;
     cursor: crosshair; /* 设置默认指针为十字线，表示可跟踪 */
     transition: border-color 0.3s;
-}
-
-.graph-area.not-tracking {
-    border-color: var(--secondary-color);
+    box-sizing: border-box; /* 确保边框不会影响尺寸计算 */
 }
 
 canvas {
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%; /* 确保CSS宽度是100% */
+    height: 100%; /* 确保CSS高度是100% */
+}
+
+.graph-area.not-tracking {
+    border-color: var(--secondary-color);
 }
 
 .direct-dot {
